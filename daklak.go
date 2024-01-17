@@ -21,14 +21,11 @@
 package daklak
 
 import (
-	"encoding/binary"
 	"io"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
-
-	"github.com/golang/snappy"
 
 	"github.com/phamvinhdat/daklak/record"
 )
@@ -82,28 +79,14 @@ func (d *Daklak) Get(key string) ([]byte, error) {
 	}
 
 	off := offset.(int64)
-	headerBytes := make([]byte, record.HeaderSize)
-	_, err := d.reader.ReadAt(headerBytes, off)
+	_, err := d.reader.Seek(off, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	h, err := record.NewHeader(headerBytes)
-	if err != nil {
+	r := &record.Record{}
+	if err = r.FromReader(d.reader); err != nil {
 		return nil, err
-	}
-
-	r := &record.Record{
-		Header: h,
-	}
-
-	if h.Type == record.TypeTTL {
-		b := make([]byte, 8)
-		_, err = d.reader.ReadAt(b, off+record.HeaderSize)
-		num := binary.LittleEndian.Uint64(b)
-		t := time.UnixMilli(int64(num))
-		r.ExpiatedAt = &t
-		off += 8
 	}
 
 	if !r.Valid() {
@@ -111,18 +94,7 @@ func (d *Daklak) Get(key string) ([]byte, error) {
 		return nil, ErrResourceNotFound
 	}
 
-	value := make([]byte, r.Header.DataLength)
-	_, err = d.reader.ReadAt(value, off+record.HeaderSize+int64(len(key)))
-	if err != nil {
-		return nil, err
-	}
-
-	value, err = snappy.Decode(nil, value)
-	if err != nil {
-		return nil, err
-	}
-
-	return value, nil
+	return r.Value, nil
 }
 
 func (d *Daklak) Set(key string, value []byte) error {

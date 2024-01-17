@@ -109,10 +109,11 @@ func (r *Record) FromReader(reader io.Reader) error {
 		r.ExpiatedAt = &t
 		off = 8
 	}
+
 	r.Key = string(kv[off : off+h.KeyLength])
-	r.Value = kv[off+h.KeyLength:]
 	r.Header = h
-	return nil
+	r.Value, err = snappy.Decode(nil, kv[off+h.KeyLength:])
+	return err
 }
 
 func (r Record) Size() int64 {

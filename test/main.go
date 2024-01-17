@@ -34,22 +34,18 @@ func main() {
 
 	defer d.Close()
 
-	//err = d.Set("datpv", []byte("hehe heh ahdsh ashh dahsda sdhas dhasdh asdahsd ahsd"))
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	//err = d.Set("123", []byte("hi, I'm a database"))
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	for key, off := range daklak.MapKeys() {
-		v, err := d.Get(key)
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Printf("key: %s, value: %s, off: %d\n", key, v, off)
+	err = d.Set("datpv", []byte("hehe heh ahdsh ashh dahsda sdhas dhasdh asdahsd ahsd"))
+	if err != nil {
+		panic(err)
 	}
+
+	err = d.Set("123", []byte("hi, I'm a database"))
+	if err != nil {
+		panic(err)
+	}
+
+	daklak.MapKeys().Range(func(key, value any) bool {
+		fmt.Printf("key: %s, value: %v\n", key, value)
+		return true
+	})
 }
